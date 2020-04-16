@@ -1,0 +1,29 @@
+Bootstrap: docker
+From: centos:centos7
+%setup
+%post
+yum -y install wget gcc gcc-c++ which bzip2
+curl -sSLO https://repo.anaconda.com/miniconda/Miniconda3-py37_4.8.2-Linux-x86_64.sh
+bash Miniconda3-py37_4.8.2-Linux-x86_64.sh -b -p /usr/local/miniconda
+rm Miniconda3-py37_4.8.2-Linux-x86_64.sh
+
+export PATH="/usr/local/miniconda/bin:$PATH"
+export CPATH="/usr/local/miniconda/include/:$CPATH"
+export PYTHONNOUSERSITE=1
+
+conda config --add channels defaults
+conda config --add channels bioconda
+conda config --add channels conda-forge
+
+conda install -y -c bioconda/label/cf201901 snakemake-minimal
+conda install -y -c bioconda/label/cf201901 fastqc
+conda install -y -c bioconda/label/cf201901 star
+conda install -y -c bioconda/label/cf201901 subread
+conda install -y -c bioconda/label/cf201901 multiqc
+conda install -y -c anaconda git
+
+# singularity configuration file(s)
+echo 'export PATH="/usr/local/miniconda/bin:$PATH"' >> $SINGULARITY_ENVIRONMENT
+echo 'export CPATH="/usr/local/miniconda/include/:$CPATH"' >> $SINGULARITY_ENVIRONMENT
+echo 'export PYTHONNOUSERSITE=1' >> $SINGULARITY_ENVIRONMENT
+
