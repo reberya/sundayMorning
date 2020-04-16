@@ -67,15 +67,20 @@ or...
 
 
 ## Running sundayMorning
-Once you have created your image file, downloaded the gtf/fasta annotation files, and ensured your data is organized appropriately you are ready to start your analysis. Simply run the following command after changing the directories in <> to suit match your local filesystem. 
+Once you have created your image file, downloaded the gtf/fasta annotation files, and ensured your data is organized appropriately you are ready to start your analysis. Begin with a dryrun to ensure snakemake can build properly and there are no errors
 
 ```
-singularity exec --bind <YOUR/FASTQ/DIRECTORY>:/in --bind <YOUR/CHOSEN/OUTPUT/DIRECTORY>:/out --bind <YOUR/CHOSEN/GENOME/DIRECTORY>:/genome <.../.../sundayMorning/code/sm.sif> snakemake -s <.../.../sundayMorning/code/sundayMorning.smk> --configfile <.../.../sundayMorning/code/sm_config.yaml> --cores 2
+singularity exec --bind <YOUR/FASTQ/DIRECTORY>:/in --bind <YOUR/CHOSEN/OUTPUT/DIRECTORY>:/out --bind <YOUR/CHOSEN/GENOME/DIRECTORY>:/genome <.../.../sundayMorning/code/sm.sif> snakemake -s <.../.../sundayMorning/code/sundayMorning.smk> --configfile <.../.../sundayMorning/code/sm_config.yaml> --dryrun
+```
+
+Then, simply run the following command after changing the directories in <> to suit match your local filesystem and cores to match the number of cores availible to you. 
+```
+singularity exec --bind <YOUR/FASTQ/DIRECTORY>:/in --bind <YOUR/CHOSEN/OUTPUT/DIRECTORY>:/out --bind <YOUR/CHOSEN/GENOME/DIRECTORY>:/genome <.../.../sundayMorning/code/sm.sif> snakemake -s <.../.../sundayMorning/code/sundayMorning.smk> --configfile <.../.../sundayMorning/code/sm_config.yaml> --cores 8
 ```
 
 If you are working off of a cluster with slurm capabilities such as the [University of Michigan Greatlakes](https://arc-ts.umich.edu/greatlakes/) cluster, I first recommend allocating yourself the proper resources using:
 ```
-srun --nodes 2 --account=<YOUR_ACCOUNT> --time 16:00:00 --ntasks-per-node=4 --mem-per-cpu=16GB --pty /bin/bash
+srun --nodes 8 --account=<YOUR_ACCOUNT> --time 16:00:00 --ntasks-per-node=4 --mem-per-cpu=16GB --pty /bin/bash
 ```
 
 
