@@ -73,6 +73,10 @@ Once you have created your image file, downloaded the gtf/fasta annotation files
 singularity exec --bind <YOUR/FASTQ/DIRECTORY>:/in --bind <YOUR/CHOSEN/OUTPUT/DIRECTORY>:/out --bind <YOUR/CHOSEN/GENOME/DIRECTORY>:/genome <.../.../sundayMorning/code/sm.sif> snakemake -s <.../.../sundayMorning/code/sundayMorning.smk> --configfile <.../.../sundayMorning/code/sm_config.yaml> --cores 2
 ```
 
+If you are working off of a cluster with slurm capabilities such as the [University of Michigan Greatlakes](https://arc-ts.umich.edu/greatlakes/) cluster, I first recommend allocating yourself the proper resources using:
+```
+srun --nodes 2 --account=<YOUR_ACCOUNT> --time 16:00:00 --ntasks-per-node=4 --mem-per-cpu=16GB --pty /bin/bash
+```
 
 
 ### Output
