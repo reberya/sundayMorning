@@ -1,7 +1,7 @@
 ################################################################################
 # TITLE:                    2020 RNAseq pipeline (Goodboy)
 # AUTHOR:                   Ryan Rebernick
-# DATE LAST MODIFIED:       04/03/2020
+# DATE LAST MODIFIED:       04/19/2020
 #
 # FUNCTION:                 FastQC
 #                           STAR alignment
@@ -9,15 +9,13 @@
 #                           MultiQC
 #
 # USES:
-#                           - python3.7-anaconda/2019.07
-#                           - config/python_env/smk_env1.yaml
-#                           - fastQC
-#                           - STAR
-#                           - subread
-#                           - multiqc
-#                           - config/python_env/multiqc_env1.yaml
+#                           - python 3.7.6
+#                           - snakemake-minimal 5.4.0
+#                           - fastQC v0.11.8
+#                           - STAR STAR_2.6.1a_08-27
+#                           - featureCounts v1.6.3
+#                           - multiqc version 1.7
 #
-# RUN: snakemake -s sundayMorning.smk --configfile sm_config.yaml --cores 1
 ################################################################################
 
 from os.path import join
@@ -42,8 +40,12 @@ READS = ["1", "2"]
 SAMPLES = [os.path.basename(fname).split('.')[0] for fname in glob.glob(config["FQ_DIR"] + '*.R1.fastq.gz')]
 
 # Genome FILES
-FA_NAME = [os.path.basename(fname).split('.fa.gz')[0] for fname in glob.glob(GENOME_DIR + '*.fa.gz')]
-GTF_NAME = [os.path.basename(fname).split('.gtf.gz')[0] for fname in glob.glob(GENOME_DIR + '*.gtf.gz')]
+FA_NAME = [os.path.basename(fname).split('.fa.gz')[0] for fname in glob.glob(GENOME_DIR + '/*.fa.gz')]
+GTF_NAME = [os.path.basename(fname).split('.gtf.gz')[0] for fname in glob.glob(GENOME_DIR + '/*.gtf.gz')]
+FA_GZ = expand(GENOME_DIR + "/{file}.fa.gz", file=FA_NAME)
+FA = expand(GENOME_DIR + "/{file}.fa", file=FA_NAME)
+GTF_GZ = expand(GENOME_DIR + "/{file}.gtf.gz", file=GTF_NAME)
+GTF = expand(GENOME_DIR + "/{file}.gtf", file=GTF_NAME)
 
 # FASTQ files
 FQ = expand(config["FQ_DIR"] + "{sample}.R{read}.fastq.gz", sample=SAMPLES, read=READS)
@@ -54,7 +56,7 @@ FQ = expand(config["FQ_DIR"] + "{sample}.R{read}.fastq.gz", sample=SAMPLES, read
 ##############################################################
 
 FQC = expand(FQC_DIR + "{sample}.R{read}_fastqc.html", sample=SAMPLES, read=READS)
-GENOME = [GENOME_DIR + "genomeParameters.txt"]
+GENOME = [GENOME_DIR + "/genomeParameters.txt"]
 ALIGNED = expand(config["OUT_DIR"] + "star/{sample}_Aligned.sortedByCoord.out.bam", sample=SAMPLES)
 FC = [FC_DIR + "counts.txt"]
 MULTIQC = [MULTIQC_DIR + "multiqc_report.html"]
@@ -66,14 +68,10 @@ MULTIQC = [MULTIQC_DIR + "multiqc_report.html"]
 
 # end files required
 rule all:
-    input: FQC + GENOME + ALIGNED + FC
-    params: a = 'start', b = SAMPLES, c = config["FQ_DIR"], d = 'stop'
+    input: FQC + FA + GTF + GENOME + ALIGNED + FC + MULTIQC
+    params:
     shell:
         """
-        echo {params.a}
-        echo {params.b}
-        echo {params.c}
-        echo {params.d}
         """
 
 
@@ -84,6 +82,7 @@ rule fastqc:
     params:
         fqc = FQC_DIR,
         log = LOG_DIR
+    log: LOG_DIR + "FQC.log"
     shell: """ \
     mkdir -p {params.fqc}; \
     mkdir -p {params.log}; \
@@ -93,9 +92,8 @@ rule fastqc:
 
 # UNZIP fa
 rule unzip_fa:
-    input: expand(GENOME_DIR + "{file}.fa.gz", file=FA_NAME)
-    output: expand(GENOME_DIR + "{file}.fa", file=FA_NAME)
-    log: expand(config["OUT_DIR"] + "log/unzip.{file}.log", file=FA_NAME)
+    input: FA_GZ
+    output: FA
     threads: 2
     params:
     shell:
@@ -106,9 +104,8 @@ rule unzip_fa:
 
 # UNZIP gtf
 rule unzip_gtf:
-    input: expand(GENOME_DIR + "{file}.gtf.gz", file=GTF_NAME)
-    output: expand(GENOME_DIR + "{file}.gtf", file=GTF_NAME)
-    log: expand(LOG_DIR + "unzip.{file}.log", file=GTF_NAME)
+    input: GTF_GZ
+    output: GTF
     threads: 2
     params:
     shell:
@@ -121,22 +118,21 @@ rule unzip_gtf:
 rule starGenomeIndex:
     input:
         gd = GENOME_DIR,
-        fa = rules.unzip_fa.output,
-        gtf = rules.unzip_gtf.output
+        fa = FA,
+        gtf = GTF
     output:
         index = GENOME
     params:
-        readLength=config["READ_LENGTH"],
+        readLength = config["READ_LENGTH"],
         gd = GENOME_DIR
     log: LOG_DIR + "genomeIndex.log"
-    threads: 2
+    threads: 4
     shell:
         """
-        mkdir -p {}
         STAR --runThreadN {threads} \
         --runMode genomeGenerate \
         --genomeDir {input.gd} \
-        --genomeFastaFiles {input.fa}  \
+        --genomeFastaFiles {input.fa} \
         --sjdbGTFfile {input.gtf} \
         --sjdbOverhang {params.readLength};
         """
@@ -144,20 +140,24 @@ rule starGenomeIndex:
 #STAR aligner
 rule star:
     input:
-        files = FQ,
+        R1 = config["FQ_DIR"] + "{sample}.R1.fastq.gz",
+        R2 = config["FQ_DIR"] + "{sample}.R2.fastq.gz",
         index = GENOME
-    output: ALIGNED
+    output:
+        out = config["OUT_DIR"] + "star/{sample}_Aligned.sortedByCoord.out.bam"
     params:
-        ext = expand(STAR_DIR + "{sample}_", sample=SAMPLES),
+        ext = STAR_DIR + "{sample}_",
         gd = GENOME_DIR,
         star = STAR_DIR
-    threads: 6
+    log: LOG_DIR + "star_{sample}.log"
+    threads: 8
     shell:
         """
+        mkdir -p {params.star}; \
         STAR \
         --genomeDir {params.gd} \
         --runThreadN {threads} \
-        --readFilesIn {input.files} \
+        --readFilesIn {input.R1} {input.R2} \
         --readFilesCommand gunzip -c \
         --outFileNamePrefix {params.ext} \
         --outSAMtype BAM SortedByCoordinate \
@@ -173,12 +173,13 @@ rule featureCounts:
     params:
         fc = FC_DIR,
         star = STAR_DIR
-    threads: 2
+    log: LOG_DIR + "featureCounts.log"
+    threads: 8
     shell:
         """
         mkdir -p {params.fc}; \
         featureCounts -p -t exon -g gene_id \
-        -a {input.gd}*.gtf \
+        -a {input.gd}/*.gtf \
         -o {params.fc}/counts.txt \
         {params.star}*Aligned.sortedByCoord.out.bam
         """
@@ -192,8 +193,8 @@ rule multiqc:
         outDir = MULTIQC_DIR,
         searchDir1 = config['OUT_DIR'],
         searchDir2 = config['FQ_DIR']
-    threads: 1
-    conda: CONFIG_DIR + "multiqc_env1.yaml"
+    threads: 8
+    log: LOG_DIR + "multiqc.log"
     shell:
         """
         mkdir -p {params.outDir}; \

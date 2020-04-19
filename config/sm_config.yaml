@@ -1,9 +1,7 @@
-#FQ_DIR: "/home/rebernrj/env/FQ/"
-FQ_DIR: "/in/"
-
-GENOME_DIR: "/genome/"
-
-#OUT_DIR: "/home/rebernrj/env/output/"
-OUT_DIR: "/out/"
-
+# Change READ_LENGTH
 READ_LENGTH: 51
+
+# DO NOT CHANGE:
+FQ_DIR: "/in/"
+GENOME_DIR: "/genome"
+OUT_DIR: "/out/"
