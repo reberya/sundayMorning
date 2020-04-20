@@ -165,6 +165,7 @@ rule star:
         --outSAMattributes Standard
         """
 
+#FeatureCounts
 rule featureCounts:
     input:
         bam = ALIGNED,
@@ -179,6 +180,7 @@ rule featureCounts:
         """
         mkdir -p {params.fc}; \
         featureCounts -p -t exon -g gene_id \
+        -T {threads} \
         -a {input.gd}/*.gtf \
         -o {params.fc}/counts.txt \
         {params.star}*Aligned.sortedByCoord.out.bam

@@ -1,7 +1,7 @@
 # Change READ_LENGTH
 READ_LENGTH: 51
 
-# DO NOT CHANGE:
+# DO NOT CHANGE:t
 FQ_DIR: "/in/"
 GENOME_DIR: "/genome"
 OUT_DIR: "/out/"
