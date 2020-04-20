@@ -19,27 +19,16 @@ git clone <LINK_TO_SUNDAYMORNING>
 
 
 
-### Installing
+### Getting the image file 
 
-1. Navigate to the sundayMorning/config folder containing the sm.def file. Generate the image within which your snakemake program will execute using the following command:
+Next, navigate to sundayMorning/code and download the image file from sylabs cloud
 ```
-singularity build ../code/sm.sif sm.def
+singularity pull --arch amd64 library://reberya/default/sundaymorning:v1.0.0
 ```
-
-Note that you may be required to use (linux w/ root permission):
-```
-sudo singularity build ../code/sm.sif sm.def
-```
-or ([macOS-desktop](https://sylabs.io/singularity-desktop-macos/)):
-```
-singularity build --remote ../code/sm.sif sm.def
-```
-depending on the installation of singularity you are working with. More information is availible on the [singularity docs](https://sylabs.io/docs/)
-
 
 
 ### File modification
-Several files must be modified to suit your specific installation of Goodboy. Additionally a reference genome for alignment and feature counting is required.
+Several files must be modified to suit your specific installation of sundayMorning. Additionally a reference genome for alignment and feature counting is required.
 
 
 #### Reference genome
@@ -50,7 +39,19 @@ cd <YOUR_GENOME_FOLDER>
 wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M24/gencode.vM24.annotation.gtf.gz
 wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M24/GRCm38.primary_assembly.genome.fa.gz
 ```
+#### Read length
+Change the config/sm_config.yaml file's READ_LENGTH parameter to equal the read length of your fastq files. 
+```
+READ_LENGTH = <YOUR_READ_LENGTH>
+```
 
+If you do not know this offhand you can run fastqc on one of your files from the sundaymorning:v1.0.0 shell and then check the report it generates.
+
+```
+singularity shell <.../.../sundayMorning/code/sundaymorning_v1.0.0.sif>
+
+fastqc <FASTQ_FILE>
+```
 
 
 ### Data organization
@@ -70,12 +71,12 @@ or...
 Once you have created your image file, downloaded the gtf/fasta annotation files, and ensured your data is organized appropriately you are ready to start your analysis. Begin with a dryrun to ensure snakemake can build properly and there are no errors
 
 ```
-singularity exec --bind <YOUR/FASTQ/DIRECTORY>:/in --bind <YOUR/CHOSEN/OUTPUT/DIRECTORY>:/out --bind <YOUR/CHOSEN/GENOME/DIRECTORY>:/genome <.../.../sundayMorning/code/sm.sif> snakemake -s <.../.../sundayMorning/code/sundayMorning.smk> --configfile <.../.../sundayMorning/code/sm_config.yaml> --dryrun
+singularity exec --bind <YOUR/FASTQ/DIRECTORY>:/in --bind <YOUR/CHOSEN/OUTPUT/DIRECTORY>:/out --bind <YOUR/CHOSEN/GENOME/DIRECTORY>:/genome <.../.../sundayMorning/code/sundaymorning_v1.0.0.sif> snakemake -s <.../.../sundayMorning/code/sundayMorning.smk> --configfile <.../.../sundayMorning/code/sm_config.yaml> --dryrun
 ```
 
 Then, simply run the following command after changing the directories in <> to suit match your local filesystem and cores to match the number of cores availible to you. 
 ```
-singularity exec --bind <YOUR/FASTQ/DIRECTORY>:/in --bind <YOUR/CHOSEN/OUTPUT/DIRECTORY>:/out --bind <YOUR/CHOSEN/GENOME/DIRECTORY>:/genome <.../.../sundayMorning/code/sm.sif> snakemake -s <.../.../sundayMorning/code/sundayMorning.smk> --configfile <.../.../sundayMorning/code/sm_config.yaml> --cores 8
+singularity exec --bind <YOUR/FASTQ/DIRECTORY>:/in --bind <YOUR/CHOSEN/OUTPUT/DIRECTORY>:/out --bind <YOUR/CHOSEN/GENOME/DIRECTORY>:/genome <.../.../sundayMorning/code/sundaymorning_v1.0.0.sif> snakemake -s <.../.../sundayMorning/code/sundayMorning.smk> --configfile <.../.../sundayMorning/code/sm_config.yaml> --cores 8
 ```
 
 If you are working off of a cluster with slurm capabilities such as the [University of Michigan Greatlakes](https://arc-ts.umich.edu/greatlakes/) cluster, I first recommend allocating yourself the proper resources using:
