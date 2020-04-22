@@ -126,7 +126,7 @@ rule starGenomeIndex:
         readLength = config["READ_LENGTH"],
         gd = GENOME_DIR
     log: LOG_DIR + "genomeIndex.log"
-    threads: 4
+    threads: 8
     shell:
         """
         STAR --runThreadN {threads} \
